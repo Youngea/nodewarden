@@ -1,0 +1,35 @@
+name: Sync upstream
+
+# 每天北京时间 03:00 (UTC 19:00) 从上游 shuaiplus/NodeWarden 快进同步
+# --ff-only 安全阀：本地无改动时永不冲突；有冲突则失败并保持现状
+on:
+  schedule:
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync upstream
+        run: |
+          git config user.name "sync-upstream-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git remote add upstream https://github.com/shuaiplus/NodeWarden.git
+          git fetch upstream main
+          git merge --ff-only upstream/main
+          git push origin main
